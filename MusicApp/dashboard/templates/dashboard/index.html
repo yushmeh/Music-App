@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎧 Music Dashboard</title>
+
+  <!-- ApexCharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.49.2/dist/apexcharts.min.js"></script>
+
+  <!-- Google Fonts: Syne (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & base ───────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #13161e;
+      --surface2:  #1c2030;
+      --border:    #252a38;
+      --accent:    #1db954;
+      --accent2:   #21d45e;
+      --purple:    #7c5cfc;
+      --amber:     #f5a623;
+      --rose:      #f0426c;
+      --sky:       #38bdf8;
+      --text:      #e8eaf0;
+      --muted:     #7a8299;
+      --radius:    14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      padding-bottom: 60px;
+      /* subtle noise grain */
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────── */
+    header {
+      padding: 48px 40px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .logo-pulse {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 0 0 rgba(29,185,84,.6);
+      animation: pulse 2.4s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0   rgba(29,185,84,.6); }
+      70%  { box-shadow: 0 0 0 14px rgba(29,185,84,0);  }
+      100% { box-shadow: 0 0 0 0   rgba(29,185,84,0);   }
+    }
+
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    header h1 span { color: var(--accent); }
+    header p { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+
+    /* ── Layout wrapper ──────────────────────────────────────────────── */
+    .page { max-width: 1260px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Section title ───────────────────────────────────────────────── */
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 44px 0 18px;
+    }
+
+    /* ── Stat cards ──────────────────────────────────────────────────── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp .5s ease both;
+      transition: transform .2s, border-color .2s;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: .06;
+      pointer-events: none;
+    }
+    .card.c-green::before  { background: radial-gradient(circle at 80% 20%, var(--accent), transparent 60%); }
+    .card.c-purple::before { background: radial-gradient(circle at 80% 20%, var(--purple), transparent 60%); }
+    .card.c-amber::before  { background: radial-gradient(circle at 80% 20%, var(--amber),  transparent 60%); }
+    .card.c-sky::before    { background: radial-gradient(circle at 80% 20%, var(--sky),    transparent 60%); }
+
+    .card__icon {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .card__label {
+      font-size: .75rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .card__value {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .card.c-green  .card__value { color: var(--accent); }
+    .card.c-purple .card__value { color: var(--purple); }
+    .card.c-amber  .card__value { color: var(--amber);  }
+    .card.c-sky    .card__value { color: var(--sky);    }
+
+    .card__sub { font-size: .8rem; color: var(--muted); margin-top: 4px; }
+
+    /* stagger */
+    .card:nth-child(1) { animation-delay: .05s; }
+    .card:nth-child(2) { animation-delay: .12s; }
+    .card:nth-child(3) { animation-delay: .19s; }
+    .card:nth-child(4) { animation-delay: .26s; }
+
+    /* ── Charts ──────────────────────────────────────────────────────── */
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 16px;
+      animation: fadeUp .5s .3s ease both;
+    }
+
+    @media (max-width: 860px) {
+      .charts { grid-template-columns: 1fr; }
+    }
+
+    .chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .chart-box h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: var(--text);
+    }
+
+    /* ── Table ───────────────────────────────────────────────────────── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: fadeUp .5s .4s ease both;
+    }
+
+    .table-search {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .table-search input {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: .9rem;
+      width: 260px;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .table-search input:focus { border-color: var(--accent); }
+    .table-search input::placeholder { color: var(--muted); }
+
+    .table-search span { color: var(--muted); font-size: .85rem; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 13px 18px;
+      text-align: left;
+      font-size: .72rem;
+      font-weight: 500;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--surface2);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: color .2s;
+    }
+    thead th:hover { color: var(--text); }
+    thead th .sort-icon { margin-left: 5px; opacity: .4; }
+    thead th.active .sort-icon { opacity: 1; color: var(--accent); }
+
+    tbody tr {
+      border-top: 1px solid var(--border);
+      transition: background .15s;
+    }
+    tbody tr:hover { background: var(--surface2); }
+
+    tbody td {
+      padding: 13px 18px;
+      font-size: .88rem;
+      vertical-align: middle;
+    }
+
+    .td-num { color: var(--muted); font-size: .78rem; width: 36px; }
+
+    .td-track strong {
+      display: block;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .td-track em {
+      font-style: normal;
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .genre-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .72rem;
+      font-weight: 500;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .listen-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .listen-bar__track {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .listen-bar__fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 4px;
+      transition: width .6s cubic-bezier(.4,0,.2,1);
+    }
+    .listen-bar__num {
+      font-size: .82rem;
+      color: var(--text);
+      min-width: 28px;
+      text-align: right;
+    }
+
+    .td-time { color: var(--muted); font-size: .82rem; }
+
+    /* ── Animations ──────────────────────────────────────────────────── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────────────────────────── -->
+<header>
+  <div class="logo-pulse">🎧</div>
+  <div>
+    <h1>Music <span>Dashboard</span></h1>
+    <p>Аналитика истории прослушивания · {{ total_tracks }} треков</p>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- ── Stat cards ──────────────────────────────────────────────────────── -->
+  <p class="section-title">Метрики</p>
+  <div class="cards">
+
+    <div class="card c-green">
+      <span class="card__icon">⏳</span>
+      <div class="card__label">Суммарное время</div>
+      <div class="card__value">{{ listening_time.hours }}h {{ listening_time.minutes }}m</div>
+      <div class="card__sub">{{ listening_time.total_min }} минут всего</div>
+    </div>
+
+    <div class="card c-purple">
+      <span class="card__icon">🎸</span>
+      <div class="card__label">Топ-жанр</div>
+      <div class="card__value">{{ top_genre }}</div>
+      <div class="card__sub">Встречается чаще всего</div>
+    </div>
+
+    <div class="card c-amber">
+      <span class="card__icon">🏆</span>
+      <div class="card__label">Самый прослушиваемый</div>
+      <div class="card__value" style="font-size:1.15rem">{{ most_played.track_name }}</div>
+      <div class="card__sub">{{ most_played.artist }} · {{ most_played.listens }} прослушиваний</div>
+    </div>
+
+    <div class="card c-sky">
+      <span class="card__icon">🎵</span>
+      <div class="card__label">Треков в базе</div>
+      <div class="card__value">{{ total_tracks }}</div>
+      <div class="card__sub">Уникальных записей</div>
+    </div>
+
+  </div>
+
+  <!-- ── Charts ──────────────────────────────────────────────────────────── -->
+  <p class="section-title">Графики</p>
+  <div class="charts">
+    <div class="chart-box">
+      <h3>🎵 Треки по числу прослушиваний</h3>
+      <div id="chart-bar"></div>
+    </div>
+    <div class="chart-box">
+      <h3>⏱ Время по жанрам (мин)</h3>
+      <div id="chart-donut"></div>
+    </div>
+  </div>
+
+  <!-- ── Table ───────────────────────────────────────────────────────────── -->
+  <p class="section-title">Все треки</p>
+  <div class="table-wrap">
+    <div class="table-search">
+      <input type="text" id="search-input" placeholder="Поиск по треку или исполнителю…" />
+      <span id="count-label">{{ total_tracks }} треков</span>
+    </div>
+
+    <table id="tracks-table">
+      <thead>
+        <tr>
+          <th class="td-num">#</th>
+          <th data-col="track_name">Трек <span class="sort-icon">↕</span></th>
+          <th data-col="genre">Жанр <span class="sort-icon">↕</span></th>
+          <th data-col="duration_minutes">Длит. <span class="sort-icon">↕</span></th>
+          <th data-col="listens">Прослушивания <span class="sort-icon">↕</span></th>
+          <th data-col="total_time">Итого мин <span class="sort-icon">↕</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for track in tracks %}
+        <tr data-track="{{ track.track_name|lower }}" data-artist="{{ track.artist|lower }}">
+          <td class="td-num">{{ forloop.counter }}</td>
+          <td class="td-track">
+            <strong>{{ track.track_name }}</strong>
+            <em>{{ track.artist }}</em>
+          </td>
+          <td><span class="genre-badge">{{ track.genre }}</span></td>
+          <td class="td-time">{{ track.duration_minutes }} мин</td>
+          <td>
+            <div class="listen-bar">
+              <div class="listen-bar__track">
+                <div class="listen-bar__fill" style="width:{{ track.listens }}%"></div>
+              </div>
+              <span class="listen-bar__num">{{ track.listens }}</span>
+            </div>
+          </td>
+          <td class="td-time">{{ track.total_time }} мин</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /page -->
+
+
+<!-- ── Scripts ──────────────────────────────────────────────────────────────── -->
+<script>
+// ── Данные из Django (безопасный JSON) ────────────────────────────────────────
+const CHART = {{ chart_data_json|safe }};
+const MAX_LISTENS = Math.max(...CHART.bar.values);
+
+// Нормализуем полосы прослушиваний к максимуму
+document.querySelectorAll('.listen-bar__fill').forEach((el, i) => {
+  const row = el.closest('tr');
+  const num = parseInt(row.querySelector('.listen-bar__num').textContent);
+  el.style.width = (num / MAX_LISTENS * 100) + '%';
+});
+
+// ── ApexCharts: горизонтальный бар ────────────────────────────────────────────
+new ApexCharts(document.getElementById('chart-bar'), {
+  series: [{ name: 'Прослушиваний', data: CHART.bar.values }],
+  chart: {
+    type: 'bar', height: 380,
+    background: 'transparent',
+    toolbar: { show: false },
+    animations: { speed: 700 },
+  },
+  plotOptions: {
+    bar: { horizontal: true, borderRadius: 6, barHeight: '62%' }
+  },
+  colors: ['#1db954'],
+  xaxis: {
+    categories: CHART.bar.labels,
+    labels: { style: { colors: '#7a8299', fontFamily: 'DM Sans, sans-serif', fontSize: '12px' } },
+    axisBorder: { show: false }, axisTicks: { show: false },
+  },
+  yaxis: {
+    labels: {
+      style: { colors: '#e8eaf0', fontFamily: 'DM Sans, sans-serif', fontSize: '12px' },
+      maxWidth: 200,
+    }
+  },
+  grid: { borderColor: '#252a38', xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
+  tooltip: {
+    theme: 'dark',
+    y: { formatter: v => v + ' прослушиваний' },
+  },
+  dataLabels: { enabled: false },
+  theme: { mode: 'dark' },
+}).render();
+
+// ── ApexCharts: пончик ────────────────────────────────────────────────────────
+new ApexCharts(document.getElementById('chart-donut'), {
+  series: CHART.donut.values,
+  labels: CHART.donut.labels,
+  chart: {
+    type: 'donut', height: 380,
+    background: 'transparent',
+    toolbar: { show: false },
+    animations: { speed: 700 },
+  },
+  colors: ['#1db954','#7c5cfc','#f5a623','#f0426c','#38bdf8','#fb923c'],
+  stroke: { colors: ['#13161e'] },
+  legend: {
+    position: 'bottom',
+    labels: { colors: '#7a8299' },
+    fontFamily: 'DM Sans, sans-serif',
+  },
+  plotOptions: {
+    pie: { donut: { size: '60%',
+      labels: {
+        show: true,
+        total: {
+          show: true, label: 'Всего мин',
+          color: '#7a8299',
+          fontFamily: 'DM Sans, sans-serif',
+          formatter: w => Math.round(w.globals.seriesTotals.reduce((a,b) => a+b, 0)) + ' мин'
+        }
+      }
+    }}
+  },
+  tooltip: {
+    theme: 'dark',
+    y: { formatter: v => v + ' мин' },
+  },
+  dataLabels: { style: { fontFamily: 'DM Sans, sans-serif' } },
+  theme: { mode: 'dark' },
+}).render();
+
+// ── Поиск по таблице ──────────────────────────────────────────────────────────
+const searchInput = document.getElementById('search-input');
+const countLabel  = document.getElementById('count-label');
+const rows        = document.querySelectorAll('#tracks-table tbody tr');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  let visible = 0;
+  rows.forEach(row => {
+    const match = row.dataset.track.includes(q) || row.dataset.artist.includes(q);
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  countLabel.textContent = visible + ' треков';
+});
+
+// ── Сортировка по клику на заголовок ─────────────────────────────────────────
+const tbody = document.querySelector('#tracks-table tbody');
+let sortCol = null, sortAsc = true;
+
+document.querySelectorAll('thead th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    sortAsc = (sortCol === col) ? !sortAsc : true;
+    sortCol = col;
+
+    // Подсвечиваем активный заголовок
+    document.querySelectorAll('thead th').forEach(h => h.classList.remove('active'));
+    th.classList.add('active');
+    th.querySelector('.sort-icon').textContent = sortAsc ? '↑' : '↓';
+
+    const allRows = [...rows];
+    allRows.sort((a, b) => {
+      const aVal = a.querySelector(`td:nth-child(${colIndex(col)})`).textContent.trim();
+      const bVal = b.querySelector(`td:nth-child(${colIndex(col)})`).textContent.trim();
+      const aNum = parseFloat(aVal), bNum = parseFloat(bVal);
+      if (!isNaN(aNum) && !isNaN(bNum)) return sortAsc ? aNum - bNum : bNum - aNum;
+      return sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+
+    allRows.forEach(r => tbody.appendChild(r));
+
+    // Обновляем номера строк
+    document.querySelectorAll('#tracks-table tbody tr').forEach((r, i) => {
+      r.querySelector('.td-num').textContent = i + 1;
+    });
+  });
+});
+
+function colIndex(col) {
+  const map = { track_name: 2, genre: 3, duration_minutes: 4, listens: 5, total_time: 6 };
+  return map[col] || 2;
+}
+</script>
+
+</body>
+</html>
