@@ -132,25 +132,3 @@ django>=5.0
 ```
 
 Все остальные зависимости (ApexCharts, Google Fonts) подключаются через CDN — интернет при запуске обязателен.
-
----
-
-## Возможные ошибки
-
-**`TemplateDoesNotExist: dashboard/index.html`**  
-Убедись, что шаблон лежит по пути `dashboard/templates/dashboard/index.html` (две вложенные папки `dashboard`).
-
-**`WSGI application could not be loaded`**  
-Замени содержимое `musicapp/wsgi.py` на:
-```python
-import os
-import django
-from django.core.handlers.wsgi import WSGIHandler
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "musicapp.settings")
-django.setup()
-application = WSGIHandler()
-```
-
-**`FileNotFoundError: music.json`**  
-Файл `music.json` должен находиться в одной папке с `manage.py`.
